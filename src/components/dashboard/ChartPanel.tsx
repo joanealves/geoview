@@ -1,13 +1,13 @@
 // components/dashboard/ChartPanel.tsx
 'use client';
 
-import { useState } from 'react';
-import { 
-  BarChart, Bar, 
-  LineChart, Line, 
+import { useState, ReactNode } from 'react';
+import {
+  BarChart, Bar,
+  LineChart, Line,
   PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
-  ResponsiveContainer 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer
 } from 'recharts';
 
 // Tipos para os dados
@@ -30,10 +30,10 @@ interface ChartPanelProps {
 
 const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
   const [activeChart, setActiveChart] = useState<'magnitude' | 'depth' | 'time' | 'distribution'>('magnitude');
-  
+
   // Cores para os gráficos
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
-  
+
   // Preparar dados para o gráfico de magnitude
   const magnitudeData = () => {
     const ranges = [
@@ -44,7 +44,7 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
       { range: '4-5', count: 0 },
       { range: '5+', count: 0 }
     ];
-    
+
     data.forEach(item => {
       if (item.magnitude < 1) ranges[0].count++;
       else if (item.magnitude < 2) ranges[1].count++;
@@ -53,10 +53,10 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
       else if (item.magnitude < 5) ranges[4].count++;
       else ranges[5].count++;
     });
-    
+
     return ranges;
   };
-  
+
   // Preparar dados para o gráfico de profundidade
   const depthData = () => {
     const ranges = [
@@ -66,7 +66,7 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
       { range: '70-150', count: 0 },
       { range: '150+', count: 0 }
     ];
-    
+
     data.forEach(item => {
       if (item.depth < 10) ranges[0].count++;
       else if (item.depth < 30) ranges[1].count++;
@@ -74,10 +74,10 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
       else if (item.depth < 150) ranges[3].count++;
       else ranges[4].count++;
     });
-    
+
     return ranges;
   };
-  
+
   // Preparar dados para o gráfico temporal
   const timeData = () => {
     // Criar buckets de horas (últimas 24 horas)
@@ -91,13 +91,13 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
         count: 0
       };
     });
-    
+
     // Preencher contagens
     data.forEach(item => {
       const itemHour = item.time.getHours();
       const currentDate = new Date().getDate();
       const itemDate = item.time.getDate();
-      
+
       // Só contar se for do mesmo dia ou do dia anterior (dentro de 24h)
       if (currentDate === itemDate || (currentDate - itemDate === 1 && new Date().getHours() <= itemHour)) {
         const bucketIndex = hours.findIndex(h => h.hour === itemHour);
@@ -106,70 +106,99 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
         }
       }
     });
-    
+
     return hours.map(h => ({
       hour: `${h.hour}:00`,
       count: h.count
     }));
   };
-  
+
   // Preparar dados para o gráfico de distribuição
   const distributionData = () => {
     // Contar os tipos de eventos
     const typeCounts: Record<string, number> = {};
-    
+
     data.forEach(item => {
       if (!typeCounts[item.type]) {
         typeCounts[item.type] = 0;
       }
       typeCounts[item.type]++;
     });
-    
+
     // Converter para array
     return Object.entries(typeCounts).map(([name, value]) => ({
       name,
       value
     }));
   };
-  
+
+  // Componente para o gráfico de distribuição
+  const DistributionChart = () => {
+    const distData = distributionData();
+
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={distData}
+            cx="50%"
+            cy="50%"
+            labelLine={true}
+            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+            outerRadius={100}
+            fill="#8884d8"
+            dataKey="value"
+          >
+            {distData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          {/* Adicionando tooltip e legend como elementos separados, mas não dentro do Pie */}
+          <Tooltip />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Seletor de gráficos */}
       <div className="flex overflow-x-auto mb-4">
-        <button 
-          className={`px-4 py-2 rounded-md mr-2 ${activeChart === 'magnitude' 
-            ? 'bg-blue-500 text-white' 
+        <button
+          className={`px-4 py-2 rounded-md mr-2 ${activeChart === 'magnitude'
+            ? 'bg-blue-500 text-white'
             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
           onClick={() => setActiveChart('magnitude')}
         >
           Magnitude
         </button>
-        <button 
-          className={`px-4 py-2 rounded-md mr-2 ${activeChart === 'depth' 
-            ? 'bg-blue-500 text-white' 
+        <button
+          className={`px-4 py-2 rounded-md mr-2 ${activeChart === 'depth'
+            ? 'bg-blue-500 text-white'
             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
           onClick={() => setActiveChart('depth')}
         >
           Profundidade
         </button>
-        <button 
-          className={`px-4 py-2 rounded-md mr-2 ${activeChart === 'time' 
-            ? 'bg-blue-500 text-white' 
+        <button
+          className={`px-4 py-2 rounded-md mr-2 ${activeChart === 'time'
+            ? 'bg-blue-500 text-white'
             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
           onClick={() => setActiveChart('time')}
         >
           Tendência Temporal
         </button>
-        <button 
-          className={`px-4 py-2 rounded-md ${activeChart === 'distribution' 
-            ? 'bg-blue-500 text-white' 
+        <button
+          className={`px-4 py-2 rounded-md ${activeChart === 'distribution'
+            ? 'bg-blue-500 text-white'
             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
           onClick={() => setActiveChart('distribution')}
         >
           Distribuição
         </button>
       </div>
-      
+
       {/* Área do gráfico */}
       <div className="bg-white p-4 rounded-lg shadow flex-grow">
         <h3 className="text-lg font-semibold mb-4">
@@ -178,10 +207,10 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
           {activeChart === 'time' && 'Atividade nas Últimas 24 Horas'}
           {activeChart === 'distribution' && 'Distribuição por Tipo de Evento'}
         </h3>
-        
+
         <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            {activeChart === 'magnitude' && (
+          {activeChart === 'magnitude' && (
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={magnitudeData()}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="range" />
@@ -190,9 +219,11 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
                 <Legend />
                 <Bar dataKey="count" name="Quantidade" fill="#8884d8" />
               </BarChart>
-            )}
-            
-            {activeChart === 'depth' && (
+            </ResponsiveContainer>
+          )}
+
+          {activeChart === 'depth' && (
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={depthData()}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="range" />
@@ -201,48 +232,31 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
                 <Legend />
                 <Bar dataKey="count" name="Quantidade" fill="#82ca9d" />
               </BarChart>
-            )}
-            
-            {activeChart === 'time' && (
+            </ResponsiveContainer>
+          )}
+
+          {activeChart === 'time' && (
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={timeData()}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="hour" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  name="Eventos" 
-                  stroke="#0088FE" 
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  name="Eventos"
+                  stroke="#0088FE"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}
                 />
               </LineChart>
-            )}
-            
-            {activeChart === 'distribution' && (
-              <PieChart>
-                <Pie
-                  data={distributionData()}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {distributionData().map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            )}
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          )}
+
+          {activeChart === 'distribution' && <DistributionChart />}
         </div>
       </div>
     </div>

@@ -1,8 +1,6 @@
 // components/dashboard/FilterBar.tsx
 'use client';
 
-import { useState } from 'react';
-
 interface Filters {
   magnitude: number;
   timeRange: string;
@@ -30,10 +28,11 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
           step="0.5"
           value={filters.magnitude}
           onChange={(e) => onFilterChange({ magnitude: parseFloat(e.target.value) })}
-          className="w-36 accent-blue-500"
+          className="w-36"
+          style={{ accentColor: '#3b82f6' }} // Alternativa universal para accent-color
         />
       </div>
-      
+
       {/* Filtro de tempo */}
       <div className="flex flex-col">
         <label className="text-sm text-gray-600 mb-1">
@@ -43,11 +42,10 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
           {['1h', '6h', '12h', '24h'].map((range) => (
             <button
               key={range}
-              className={`px-3 py-1 text-sm rounded-md ${
-                filters.timeRange === range
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-3 py-1 text-sm rounded-md ${filters.timeRange === range
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
               onClick={() => onFilterChange({ timeRange: range })}
             >
               {range}
@@ -55,7 +53,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
           ))}
         </div>
       </div>
-      
+
       {/* Filtro de região (exemplo básico) */}
       <div className="flex flex-col">
         <label htmlFor="region-filter" className="text-sm text-gray-600 mb-1">
@@ -69,9 +67,11 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
         >
           <option value="all">Todas as regiões</option>
           <option value="us">Estados Unidos</option>
-          <option value="jp">Japão</option>
+          <option value="japan">Japão</option>
           <option value="pacific">Pacífico</option>
-          <option value="eu">Europa</option>
+          <option value="europe">Europa</option>
+          <option value="alaska">Alasca</option>
+          <option value="california">Califórnia</option>
         </select>
       </div>
     </div>

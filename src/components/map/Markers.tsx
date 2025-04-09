@@ -1,7 +1,7 @@
 // components/map/Markers.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import maplibregl, { Map, Marker } from 'maplibre-gl';
 import useSWR from 'swr';
 
@@ -11,7 +11,8 @@ interface MarkerItem {
   latitude: number;
   title?: string;
   description?: string;
-  [key: string]: any;
+  // Substituído [key: string]: any por uma tipagem mais específica
+  [key: string]: string | number | undefined;
 }
 
 // URL para dados de exemplo ou API de dados geográficos
@@ -36,7 +37,8 @@ const Markers: React.FC<MarkersProps> = ({
   const [markers, setMarkers] = useState<maplibregl.Marker[]>([]);
 
   // Buscar dados da API se não forem fornecidos via props
-  const { data: apiData, error } = useSWR<MarkerItem[]>(propData ? null : API_URL, fetcher, {
+  // Removido a variável error não utilizada
+  const { data: apiData } = useSWR<MarkerItem[]>(propData ? null : API_URL, fetcher, {
     refreshInterval: 60000, // Atualizar a cada minuto
   });
 
@@ -44,7 +46,8 @@ const Markers: React.FC<MarkersProps> = ({
   const markerData = propData || apiData;
 
   // Função para criar um elemento personalizado para o marcador
-  const createMarkerElement = (item: MarkerItem) => {
+  // Memoizando com useCallback para evitar recriação desnecessária
+  const createMarkerElement = useCallback((item: MarkerItem) => {
     const el = document.createElement('div');
 
     // Diferentes estilos baseados no tipo de marcador
@@ -73,7 +76,7 @@ const Markers: React.FC<MarkersProps> = ({
     }
 
     return el;
-  };
+  }, [markerType]);
 
   // Adicionar ou atualizar marcadores no mapa
   useEffect(() => {
@@ -83,7 +86,7 @@ const Markers: React.FC<MarkersProps> = ({
     markers.forEach(marker => marker.remove());
 
     // Criar novos marcadores
-    const newMarkers = markerData.map((item: MarkerItem): Marker => {
+    const newMarkers = markerData.map((item) => {
       const el = createMarkerElement(item);
 
       // Criar e adicionar marcador ao mapa
@@ -113,7 +116,7 @@ const Markers: React.FC<MarkersProps> = ({
     return () => {
       newMarkers.forEach(marker => marker.remove());
     };
-  }, [map, markerData, markerType, visible]);
+  }, [map, markerData, markerType, visible, createMarkerElement, markers]);
 
   // Se os marcadores não estão visíveis, não fazer nada
   useEffect(() => {
