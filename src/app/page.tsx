@@ -20,6 +20,22 @@ const EARTHQUAKE_API = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summar
 // Função para buscar dados
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
+// Interface para os dados do terremoto
+interface EarthquakeFeature {
+  geometry: {
+    coordinates: [number, number, number]; // [longitude, latitude, depth]
+  };
+  properties: {
+    title: string;
+    mag: number;
+    place: string;
+  };
+}
+
+interface EarthquakeData {
+  features: EarthquakeFeature[];
+}
+
 export default function Home() {
   const [showDashboard, setShowDashboard] = useState(true);
   const [earthquakeMarkers, setEarthquakeMarkers] = useState<Array<{
@@ -31,7 +47,7 @@ export default function Home() {
   }>>([]);
 
   // Buscar dados com SWR para atualização automática
-  const { data, error, isLoading } = useSWR(EARTHQUAKE_API, fetcher, {
+  const { data, error, isLoading } = useSWR<EarthquakeData>(EARTHQUAKE_API, fetcher, {
     refreshInterval: 60000, // Atualizar a cada minuto
   });
 
@@ -39,7 +55,7 @@ export default function Home() {
   useEffect(() => {
     if (!data || !data.features) return;
 
-    const markers = data.features.map((feature: any) => ({
+    const markers = data.features.map((feature: EarthquakeFeature) => ({
       longitude: feature.geometry.coordinates[0],
       latitude: feature.geometry.coordinates[1],
       title: feature.properties.title,

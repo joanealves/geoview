@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import maplibregl, { Map, Marker } from 'maplibre-gl';
+import maplibregl, { Map } from 'maplibre-gl';
 import useSWR from 'swr';
 
 // Interface para um item de marcador
@@ -37,7 +37,6 @@ const Markers: React.FC<MarkersProps> = ({
   const [markers, setMarkers] = useState<maplibregl.Marker[]>([]);
 
   // Buscar dados da API se não forem fornecidos via props
-  // Removido a variável error não utilizada
   const { data: apiData } = useSWR<MarkerItem[]>(propData ? null : API_URL, fetcher, {
     refreshInterval: 60000, // Atualizar a cada minuto
   });
@@ -47,32 +46,36 @@ const Markers: React.FC<MarkersProps> = ({
 
   // Função para criar um elemento personalizado para o marcador
   // Memoizando com useCallback para evitar recriação desnecessária
-  const createMarkerElement = useCallback((item: MarkerItem) => {
+  const createMarkerElement = useCallback((markerItem: MarkerItem) => {
     const el = document.createElement('div');
 
+    // Você pode usar dados do markerItem para personalizar o marcador
+    // Por exemplo, poderia usar markerItem.type se disponível
+    const markerTypeToUse = markerItem.type as string || markerType;
+
     // Diferentes estilos baseados no tipo de marcador
-    switch (markerType) {
+    switch (markerTypeToUse) {
       case 'station':
         el.className = 'marker-station';
         el.innerHTML = `
-          <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-            <span class="text-white text-xs font-bold">S</span>
-          </div>
-        `;
+        <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+          <span class="text-white text-xs font-bold">${markerItem.label || 'S'}</span>
+        </div>
+      `;
         break;
       case 'event':
         el.className = 'marker-event';
         el.innerHTML = `
-          <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-            <span class="text-white text-xs font-bold">!</span>
-          </div>
-        `;
+        <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+          <span class="text-white text-xs font-bold">${markerItem.label || '!'}</span>
+        </div>
+      `;
         break;
       default:
         el.className = 'marker-default';
         el.innerHTML = `
-          <div class="w-4 h-4 bg-gray-700 rounded-full border-2 border-white"></div>
-        `;
+        <div class="w-4 h-4 bg-gray-700 rounded-full border-2 border-white"></div>
+      `;
     }
 
     return el;

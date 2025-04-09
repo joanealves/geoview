@@ -1,4 +1,3 @@
-// components/dashboard/FilterBar.tsx
 'use client';
 
 interface Filters {

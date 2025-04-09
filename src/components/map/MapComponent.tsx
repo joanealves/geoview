@@ -135,7 +135,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         return () => {
             newMarkers.forEach(marker => marker.remove());
         };
-    }, [markers, mapInitialized, createMarkerElement]);
+    }, [markers, mapInitialized, createMarkerElement, mapMarkers]);
 
     // Função para mudar o tipo de mapa
     const changeMapStyle = useCallback((type: 'streets' | 'satellite' | 'terrain') => {

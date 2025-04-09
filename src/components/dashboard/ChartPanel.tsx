@@ -1,7 +1,7 @@
 // components/dashboard/ChartPanel.tsx
 'use client';
 
-import { useState, ReactNode } from 'react';
+import { useState } from 'react';
 import {
   BarChart, Bar,
   LineChart, Line,
