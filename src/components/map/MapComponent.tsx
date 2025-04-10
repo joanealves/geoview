@@ -1,11 +1,9 @@
-// components/map/MapComponent.tsx
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import maplibregl, { Map } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// Interfaces para marcadores e propriedades
 interface MarkerItem {
     longitude: number;
     latitude: number;
@@ -24,84 +22,144 @@ interface MapComponentProps {
     showControls?: boolean;
 }
 
+const MAP_STYLES = {
+    streets: 'https://api.maptiler.com/maps/streets/style.json?key=vuFX9QXs86TZoRsqoyCk',
+    satellite: 'https://api.maptiler.com/maps/hybrid/style.json?key=vuFX9QXs86TZoRsqoyCk',
+    terrain: 'https://api.maptiler.com/maps/topographique/style.json?key=vuFX9QXs86TZoRsqoyCk',
+    osm: 'https://api.maptiler.com/maps/openstreetmap/style.json?key=vuFX9QXs86TZoRsqoyCk'
+};
+
 const MapComponent: React.FC<MapComponentProps> = ({
-    initialView = { center: [-98.5795, 39.8283], zoom: 3 }, // Centro dos EUA como padrão
-    style = 'https://demotiles.maplibre.org/style.json', // Estilo padrão
+    initialView = { center: [-98.5795, 39.8283], zoom: 3 },
+    style = MAP_STYLES.osm, // Usar OSM como padrão
     markers = [],
     showControls = true
 }) => {
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<Map | null>(null);
     const [mapInitialized, setMapInitialized] = useState(false);
-    const [mapType, setMapType] = useState<'streets' | 'satellite' | 'terrain'>('streets');
+    const [mapType, setMapType] = useState<'streets' | 'satellite' | 'terrain' | 'osm'>('osm');
     const [mapMarkers, setMapMarkers] = useState<maplibregl.Marker[]>([]);
+    const [mapError, setMapError] = useState<string | null>(null);
 
-    // Inicializar mapa
-    useEffect(() => {
-        if (map.current || !mapContainer.current) return;
+    // Inicializar o mapa
+useEffect(() => {
+    if (map.current || !mapContainer.current) return;
 
-        map.current = new maplibregl.Map({
+    console.log("Inicializando mapa...");
+    setMapError(null);
+
+    // Sempre iniciar com o estilo OSM local, que é mais confiável
+    const initialStyle = MAP_STYLES.osm;
+
+    try {
+        const newMap = new maplibregl.Map({
             container: mapContainer.current,
-            style: style,
+            style: initialStyle,
             center: initialView.center,
             zoom: initialView.zoom
         });
 
-        // Adicionar controles de navegação
+        // Adicionar controles ao mapa
         if (showControls) {
-            map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
-            map.current.addControl(
-                new maplibregl.GeolocateControl({
-                    positionOptions: {
-                        enableHighAccuracy: true
-                    },
-                    trackUserLocation: true
-                }),
-                'top-right'
-            );
+            newMap.addControl(new maplibregl.NavigationControl(), 'top-right');
+            newMap.addControl(new maplibregl.ScaleControl(), 'bottom-right');
         }
 
-        map.current.on('load', () => {
+        // Adicionar um log mais detalhado quando o estilo muda
+        newMap.on('styledata', () => {
+            console.log("Estilo de mapa carregado com sucesso!");
+        });
+
+        // Esperar até que o mapa carregue completamente
+        newMap.on('load', () => {
+            console.log("Mapa carregado com sucesso!");
+            map.current = newMap;
             setMapInitialized(true);
         });
 
-        return () => {
-            if (map.current) {
-                map.current.remove();
-                map.current = null;
-            }
-        };
-    }, [initialView.center, initialView.zoom, style, showControls]);
+        // Manipular erros
+        newMap.on('error', (e) => {
+            console.error("Erro ao carregar o mapa:", e);
+            // Exibir informações detalhadas do erro
+            const errorMessage = e.error 
+                ? `Erro ao carregar o mapa: ${e.error.message || JSON.stringify(e.error)}` 
+                : `Erro ao carregar o mapa: Verifique a conexão e a URL do estilo`;
+            setMapError(errorMessage);
+        });
+    } catch (error: any) {
+        console.error("Erro ao inicializar o mapa:", error);
+        setMapError(`Erro ao inicializar o mapa: ${error?.message || JSON.stringify(error) || 'Erro desconhecido'}`);
+    }
 
-    // Criar elemento para marcador
+    // Função de limpeza
+    return () => {
+        if (map.current) {
+            map.current.remove();
+            map.current = null;
+        }
+    };
+}, [initialView.center, initialView.zoom, showControls]);
+
+    // Criação de elementos de marcador
     const createMarkerElement = useCallback((item: MarkerItem) => {
+        // Criar um elemento DOM para o marcador
         const el = document.createElement('div');
 
-        // Estilo baseado na magnitude (para terremotos)
-        let bgColor = 'bg-gray-700';
+        // Determinar a cor com base na magnitude (para terremotos)
+        let size = '24px';
+        let color = '#555';
 
         if (item.magnitude !== undefined) {
             if (item.magnitude >= 5) {
-                bgColor = 'bg-red-500';
+                color = '#dc2626'; // Vermelho
+                size = '32px';
             } else if (item.magnitude >= 3) {
-                bgColor = 'bg-amber-500';
+                color = '#f59e0b'; // Âmbar
+                size = '28px';
             } else if (item.magnitude >= 1) {
-                bgColor = 'bg-green-500';
+                color = '#10b981'; // Verde
+                size = '24px';
             }
         }
 
-        el.innerHTML = `
-      <div class="w-6 h-6 ${bgColor} rounded-full flex items-center justify-center">
-        <span class="text-white text-xs font-bold">!</span>
-      </div>
-    `;
+        // Definir o estilo diretamente no elemento (sem depender do Tailwind)
+        el.style.width = size;
+        el.style.height = size;
+        el.style.backgroundColor = color;
+        el.style.borderRadius = '50%';
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.justifyContent = 'center';
+        el.style.border = '2px solid white';
+        el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+
+        // Adicionar texto para a magnitude se disponível
+        if (item.magnitude !== undefined) {
+            const span = document.createElement('span');
+            span.style.color = 'white';
+            span.style.fontSize = '12px';
+            span.style.fontWeight = 'bold';
+            span.textContent = item.magnitude.toFixed(1);
+            el.appendChild(span);
+        } else {
+            // Adicionar um ícone padrão se não houver magnitude
+            const span = document.createElement('span');
+            span.style.color = 'white';
+            span.style.fontSize = '12px';
+            span.style.fontWeight = 'bold';
+            span.textContent = '!';
+            el.appendChild(span);
+        }
 
         return el;
     }, []);
 
-    // Adicionar marcadores ao mapa
+    // Adicionando marcadores apenas após a inicialização do mapa
     useEffect(() => {
-        if (!map.current || !mapInitialized || markers.length === 0) return;
+        if (!mapInitialized || !map.current) return;
+
+        console.log("Adicionando marcadores:", markers.length);
 
         // Remover marcadores existentes
         mapMarkers.forEach(marker => marker.remove());
@@ -116,13 +174,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
             // Adicionar popup se houver informações
             if (item.title || item.description) {
+                const popupContent = document.createElement('div');
+                popupContent.style.padding = '10px';
+
+                if (item.title) {
+                    const title = document.createElement('h3');
+                    title.style.fontWeight = 'bold';
+                    title.style.marginBottom = '5px';
+                    title.textContent = item.title;
+                    popupContent.appendChild(title);
+                }
+
+                if (item.description) {
+                    const desc = document.createElement('p');
+                    desc.textContent = item.description;
+                    popupContent.appendChild(desc);
+                }
+
                 const popup = new maplibregl.Popup({ offset: 25 })
-                    .setHTML(`
-            <div class="p-2">
-              <h3 class="font-bold">${item.title || ''}</h3>
-              <p>${item.description || ''}</p>
-            </div>
-          `);
+                    .setDOMContent(popupContent);
 
                 marker.setPopup(popup);
             }
@@ -135,29 +205,46 @@ const MapComponent: React.FC<MapComponentProps> = ({
         return () => {
             newMarkers.forEach(marker => marker.remove());
         };
-    }, [markers, mapInitialized, createMarkerElement, mapMarkers]);
+    }, [markers, mapInitialized, createMarkerElement]);
 
     // Função para mudar o tipo de mapa
-    const changeMapStyle = useCallback((type: 'streets' | 'satellite' | 'terrain') => {
+    const changeMapStyle = useCallback((type: 'streets' | 'satellite' | 'terrain' | 'osm') => {
         if (!map.current) return;
 
-        let styleUrl = 'https://demotiles.maplibre.org/style.json'; // Estilo padrão (streets)
+        console.log("Mudando estilo do mapa para:", type);
+        setMapError(null);
 
-        if (type === 'satellite') {
-            // Usar outro estilo gratuito para exemplo
-            styleUrl = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
-        } else if (type === 'terrain') {
-            // Usar outro estilo gratuito para exemplo
-            styleUrl = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+        let styleUrl = MAP_STYLES.osm; // Fallback para o estilo local OSM
+
+        switch (type) {
+            case 'streets':
+                styleUrl = MAP_STYLES.streets;
+                break;
+            case 'satellite':
+                styleUrl = MAP_STYLES.satellite;
+                break;
+            case 'terrain':
+                styleUrl = MAP_STYLES.terrain;
+                break;
+            case 'osm':
+                styleUrl = MAP_STYLES.osm;
+                break;
         }
 
-        map.current.setStyle(styleUrl);
-        setMapType(type);
+        try {
+            map.current.setStyle(styleUrl);
+            setMapType(type);
+        } catch (error: any) {
+            console.error("Erro ao mudar o estilo do mapa:", error);
+            setMapError(`Erro ao mudar o estilo do mapa: ${error?.message || 'Erro desconhecido'}`);
+        }
     }, []);
 
     // Reset da visualização do mapa
     const resetView = useCallback(() => {
         if (!map.current) return;
+
+        console.log("Resetando visualização do mapa");
 
         map.current.flyTo({
             center: initialView.center,
@@ -172,6 +259,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         if (!map.current) return;
 
         const currentPitch = map.current.getPitch();
+        console.log("Alternando visualização 3D. Pitch atual:", currentPitch);
 
         if (currentPitch > 0) {
             // Voltar para 2D
@@ -189,8 +277,50 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }, []);
 
     return (
-        <div className="relative w-full h-full">
-            <div ref={mapContainer} className="absolute inset-0 rounded-lg shadow-lg" />
+        <div className="relative w-full h-full" style={{ minHeight: '500px' }}>
+  <div 
+    ref={mapContainer} 
+    className="absolute inset-0 rounded-lg shadow-lg"
+    style={{ width: '100%', height: '100%' }}
+  />
+
+            {/* Mensagem de inicialização/erro */}
+            {!mapInitialized && !mapError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75 rounded-lg">
+                    <div className="text-center p-4">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                        <p className="text-gray-700">Carregando mapa...</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Mensagem de erro */}
+            {mapError && (
+                <div className="absolute inset-0 flex items-center justify-center bg-red-50 bg-opacity-90 rounded-lg">
+                    <div className="text-center p-4 max-w-md">
+                        <div className="text-red-500 text-5xl mb-4">⚠️</div>
+                        <p className="text-red-700 font-bold mb-2">Erro no mapa</p>
+                        <p className="text-red-600">{mapError}</p>
+                        <button
+                            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                            onClick={() => {
+                                if (map.current) {
+                                    map.current.remove();
+                                    map.current = null;
+                                }
+                                setMapError(null);
+                                setMapInitialized(false);
+                                setTimeout(() => {
+                                    // Reinicializar com o estilo OSM local
+                                    changeMapStyle('osm');
+                                }, 100);
+                            }}
+                        >
+                            Tentar Novamente com OSM
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {mapInitialized && showControls && (
                 <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
@@ -198,6 +328,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     <div className="bg-white rounded-lg shadow-lg p-3 w-48">
                         <h3 className="font-semibold text-gray-700 mb-2">Estilo do Mapa</h3>
                         <div className="flex flex-col gap-1">
+                            <button
+                                className={`px-3 py-1 rounded-md text-sm ${mapType === 'osm' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                onClick={() => changeMapStyle('osm')}
+                            >
+                                OpenStreetMap
+                            </button>
                             <button
                                 className={`px-3 py-1 rounded-md text-sm ${mapType === 'streets' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                                 onClick={() => changeMapStyle('streets')}
