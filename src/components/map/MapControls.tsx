@@ -1,7 +1,6 @@
-// components/map/MapControls.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 interface MapControlsProps {
     onSearch: (term: string) => void;
@@ -9,7 +8,17 @@ interface MapControlsProps {
 }
 
 const MapControls: React.FC<MapControlsProps> = ({ onSearch, onFilterChange }) => {
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState<string>('');
+
+    const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        onSearch(value);
+    }, [onSearch]);
+
+    const handleFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+        onFilterChange(e.target.value);
+    }, [onFilterChange]);
 
     return (
         <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg z-10">
@@ -20,10 +29,7 @@ const MapControls: React.FC<MapControlsProps> = ({ onSearch, onFilterChange }) =
                     placeholder="Pesquisar..."
                     className="border p-2 rounded w-full"
                     value={searchTerm}
-                    onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        onSearch(e.target.value);
-                    }}
+                    onChange={handleSearch}
                 />
             </div>
 
@@ -31,7 +37,8 @@ const MapControls: React.FC<MapControlsProps> = ({ onSearch, onFilterChange }) =
                 <h3 className="font-bold mb-2">Filtros</h3>
                 <select
                     className="border p-2 rounded w-full"
-                    onChange={(e) => onFilterChange(e.target.value)}
+                    onChange={handleFilterChange}
+                    defaultValue="all"
                 >
                     <option value="all">Todos</option>
                     <option value="station">Estações</option>

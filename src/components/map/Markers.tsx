@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 
 interface MarkerItem {
@@ -19,6 +19,9 @@ interface MarkersProps {
 }
 
 const Markers: React.FC<MarkersProps> = ({ map, data, onMarkerClick }) => {
+  // Usar ref para manter track dos marcadores criados
+  const markersRef = useRef<maplibregl.Marker[]>([]);
+
   const createMarkerElement = useCallback((item: MarkerItem) => {
     const el = document.createElement('div');
 
@@ -48,13 +51,21 @@ const Markers: React.FC<MarkersProps> = ({ map, data, onMarkerClick }) => {
   }, []);
 
   useEffect(() => {
-    if (!map || !data.length) return;
+    if (!map || !data?.length) return;
 
+    // Limpar marcadores anteriores
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Criar novos marcadores
     const markers = data.map(item => {
       const el = createMarkerElement(item);
 
+      // Usar uma função nomeada para o evento para poder remover depois
+      const handleClick = () => onMarkerClick(item);
+
       // Adicionar evento de clique
-      el.addEventListener('click', () => onMarkerClick(item));
+      el.addEventListener('click', handleClick);
 
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([item.longitude, item.latitude])
@@ -73,14 +84,24 @@ const Markers: React.FC<MarkersProps> = ({ map, data, onMarkerClick }) => {
         marker.setPopup(popup);
       }
 
+      // Armazenar função de clique no marcador para remover depois
+      (marker as any)._clickHandler = handleClick;
+      (marker as any)._element = el;
+
       return marker;
     });
 
+    // Atualizar a ref com os novos marcadores
+    markersRef.current = markers;
+
     return () => {
       markers.forEach(marker => {
-        marker.getElement().removeEventListener('click', () => onMarkerClick);
+        if ((marker as any)._element && (marker as any)._clickHandler) {
+          (marker as any)._element.removeEventListener('click', (marker as any)._clickHandler);
+        }
         marker.remove();
       });
+      markersRef.current = [];
     };
   }, [map, data, createMarkerElement, onMarkerClick]);
 

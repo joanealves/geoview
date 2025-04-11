@@ -45,7 +45,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     style = MAP_STYLES.osm, // Usar OSM como padrão
     markers = [],
     showControls = true,
-    filters = {},
+    filters: initialFilters = {},
     onMarkerClick,
     enableClustering = true
 }) => {
@@ -57,6 +57,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const [mapError, setMapError] = useState<string | null>(null);
     const [clusteringEnabled, setClusteringEnabled] = useState(enableClustering);
     const [selectedMarker, setSelectedMarker] = useState<MarkerItem | null>(null);
+
+    // Definir filtros como estado 
+    const [filters, setFilters] = useState({
+        magnitude: initialFilters.magnitude || 0,
+        timeRange: initialFilters.timeRange || '24h',
+        region: initialFilters.region || 'all'
+    });
 
     // Inicializar o mapa
     useEffect(() => {
@@ -97,7 +104,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             // Manipular erros
             newMap.on('error', (e) => {
                 console.error("Erro ao carregar o mapa:", e);
-                // Exibir informações detalhadas do erro
                 const errorMessage = e.error
                     ? `Erro ao carregar o mapa: ${e.error.message || JSON.stringify(e.error)}`
                     : `Erro ao carregar o mapa: Verifique a conexão e a URL do estilo`;
@@ -367,6 +373,35 @@ const MapComponent: React.FC<MapComponentProps> = ({
         // Se desejar adicionar um novo marcador, pode implementar aqui
     }, []);
 
+    // Manipular alterações nos filtros
+    const handleMagnitudeChange = (value: string) => {
+        setFilters(prev => ({
+            ...prev,
+            magnitude: parseFloat(value)
+        }));
+    };
+
+    const handleTimeRangeChange = (value: string) => {
+        setFilters(prev => ({
+            ...prev,
+            timeRange: value
+        }));
+    };
+
+    const handleRegionChange = (value: string) => {
+        setFilters(prev => ({
+            ...prev,
+            region: value
+        }));
+    };
+
+    // Aplicar filtros (função consolidada)
+    const applyFilters = () => {
+        // Esta função não precisa fazer nada especial,
+        // pois os filtros já são aplicados por reatividade
+        console.log("Filtros aplicados:", filters);
+    };
+
     useEffect(() => {
         if (!map.current || !mapInitialized) return;
 
@@ -517,8 +552,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
                         <div className="mb-1">
                             <span className="text-sm font-semibold">Magnitude:</span>
                             <span className={`ml-1 px-2 py-0.5 rounded-full text-xs text-white ${selectedMarker.magnitude >= 5 ? 'bg-red-600' :
-                                    selectedMarker.magnitude >= 3 ? 'bg-amber-500' :
-                                        'bg-green-600'
+                                selectedMarker.magnitude >= 3 ? 'bg-amber-500' :
+                                    'bg-green-600'
                                 }`}>
                                 {selectedMarker.magnitude.toFixed(1)}
                             </span>
@@ -556,14 +591,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg z-10 w-48">
                     <h3 className="font-semibold text-gray-700 mb-2">Filtros</h3>
 
-                    {/* Exemplo de filtros - você pode personalizar conforme sua necessidade */}
                     <div className="mb-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Magnitude Mínima
                         </label>
                         <select
                             className="w-full p-1 text-sm border border-gray-300 rounded"
-                            defaultValue={filters.magnitude?.toString() || "0"}
+                            value={filters.magnitude?.toString() || "0"}
+                            onChange={(e) => handleMagnitudeChange(e.target.value)}
                             disabled={!clusteringEnabled} // Desabilitar quando não estiver usando clustering
                         >
                             <option value="0">Todas</option>
@@ -579,7 +614,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
                         </label>
                         <select
                             className="w-full p-1 text-sm border border-gray-300 rounded"
-                            defaultValue={filters.timeRange || "24h"}
+                            value={filters.timeRange || "24h"}
+                            onChange={(e) => handleTimeRangeChange(e.target.value)}
                             disabled={!clusteringEnabled}
                         >
                             <option value="1h">Última hora</option>
@@ -595,7 +631,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
                         </label>
                         <select
                             className="w-full p-1 text-sm border border-gray-300 rounded"
-                            defaultValue={filters.region || "all"}
+                            value={filters.region || "all"}
+                            onChange={(e) => handleRegionChange(e.target.value)}
                             disabled={!clusteringEnabled}
                         >
                             <option value="all">Todas as regiões</option>
@@ -609,6 +646,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     <div className="flex justify-end mt-3">
                         <button
                             className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                            onClick={applyFilters}
                             disabled={!clusteringEnabled}
                         >
                             Aplicar Filtros
