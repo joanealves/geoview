@@ -19,13 +19,11 @@ interface MarkersProps {
 }
 
 const Markers: React.FC<MarkersProps> = ({ map, data, onMarkerClick }) => {
-  // Usar ref para manter track dos marcadores criados
   const markersRef = useRef<maplibregl.Marker[]>([]);
 
   const createMarkerElement = useCallback((item: MarkerItem) => {
     const el = document.createElement('div');
 
-    // Estilo baseado no tipo de marcador
     const color = item.type === 'station' ? '#3b82f6' : '#ef4444';
     const size = '24px';
 
@@ -39,7 +37,6 @@ const Markers: React.FC<MarkersProps> = ({ map, data, onMarkerClick }) => {
     el.style.alignItems = 'center';
     el.style.justifyContent = 'center';
 
-    // Ícone interno
     const icon = document.createElement('div');
     icon.style.color = 'white';
     icon.style.fontWeight = 'bold';
@@ -53,25 +50,20 @@ const Markers: React.FC<MarkersProps> = ({ map, data, onMarkerClick }) => {
   useEffect(() => {
     if (!map || !data?.length) return;
 
-    // Limpar marcadores anteriores
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
-    // Criar novos marcadores
     const markers = data.map(item => {
       const el = createMarkerElement(item);
 
-      // Usar uma função nomeada para o evento para poder remover depois
       const handleClick = () => onMarkerClick(item);
 
-      // Adicionar evento de clique
       el.addEventListener('click', handleClick);
 
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([item.longitude, item.latitude])
         .addTo(map);
 
-      // Popup
       if (item.title || item.description) {
         const popup = new maplibregl.Popup({ offset: 25 })
           .setHTML(`
@@ -84,14 +76,12 @@ const Markers: React.FC<MarkersProps> = ({ map, data, onMarkerClick }) => {
         marker.setPopup(popup);
       }
 
-      // Armazenar função de clique no marcador para remover depois
       (marker as any)._clickHandler = handleClick;
       (marker as any)._element = el;
 
       return marker;
     });
 
-    // Atualizar a ref com os novos marcadores
     markersRef.current = markers;
 
     return () => {
