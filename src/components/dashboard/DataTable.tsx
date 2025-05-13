@@ -1,4 +1,3 @@
-// components/dashboard/DataTable.tsx
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -27,19 +26,16 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
-  // Função para alternar o campo de ordenação
   const toggleSort = (field: keyof DataItem) => {
     if (field === sortField) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection('desc'); // Nova coluna começa com desc
+      setSortDirection('desc'); 
     }
   };
   
-  // Filtrar e ordenar dados
   const processedData = useMemo(() => {
-    // Filtrar por termo de busca
     let filteredData = data;
     
     if (searchTerm.trim() !== '') {
@@ -61,17 +57,14 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
     return sortedData;
   }, [data, searchTerm, sortField, sortDirection]);
   
-  // Paginação
   const totalPages = Math.ceil(processedData.length / itemsPerPage);
   const paginatedData = processedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
   
-  // Renderização da tabela
   return (
     <div className="flex flex-col h-full">
-      {/* Barra de pesquisa */}
       <div className="mb-4">
         <input
           type="text"
@@ -80,12 +73,11 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
-            setCurrentPage(1); // Reset para primeira página ao pesquisar
+            setCurrentPage(1); 
           }}
         />
       </div>
       
-      {/* Tabela de dados */}
       <div className="flex-grow overflow-auto border rounded-md">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 sticky top-0">
@@ -166,7 +158,6 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
         </table>
       </div>
       
-      {/* Paginação */}
       {totalPages > 1 && (
         <div className="mt-4 flex justify-between items-center">
           <div className="text-sm text-gray-700">
@@ -181,9 +172,7 @@ const DataTable: React.FC<DataTableProps> = ({ data }) => {
             >
               Anterior
             </button>
-            {/* Páginas */}
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              // Lógica para mostrar páginas centralizadas em torno da página atual
               let pageToShow;
               if (totalPages <= 5) {
                 pageToShow = i + 1;
