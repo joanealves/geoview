@@ -42,7 +42,7 @@ const MAP_STYLES = {
 
 const MapComponent: React.FC<MapComponentProps> = ({
     initialView = { center: [-98.5795, 39.8283], zoom: 3 },
-    style = MAP_STYLES.osm, // Usar OSM como padrão
+    style = MAP_STYLES.osm, 
     markers = [],
     showControls = true,
     filters: initialFilters = {},
@@ -58,21 +58,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const [clusteringEnabled, setClusteringEnabled] = useState(enableClustering);
     const [selectedMarker, setSelectedMarker] = useState<MarkerItem | null>(null);
 
-    // Definir filtros como estado 
     const [filters, setFilters] = useState({
         magnitude: initialFilters.magnitude || 0,
         timeRange: initialFilters.timeRange || '24h',
         region: initialFilters.region || 'all'
     });
 
-    // Inicializar o mapa
     useEffect(() => {
         if (map.current || !mapContainer.current) return;
 
         console.log("Inicializando mapa...");
         setMapError(null);
 
-        // Sempre iniciar com o estilo OSM local, que é mais confiável
         const initialStyle = MAP_STYLES.osm;
 
         try {
@@ -83,25 +80,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 zoom: initialView.zoom
             });
 
-            // Adicionar controles ao mapa
             if (showControls) {
                 newMap.addControl(new maplibregl.NavigationControl(), 'top-right');
                 newMap.addControl(new maplibregl.ScaleControl(), 'bottom-right');
             }
 
-            // Adicionar um log mais detalhado quando o estilo muda
             newMap.on('styledata', () => {
                 console.log("Estilo de mapa carregado com sucesso!");
             });
 
-            // Esperar até que o mapa carregue completamente
             newMap.on('load', () => {
                 console.log("Mapa carregado com sucesso!");
                 map.current = newMap;
                 setMapInitialized(true);
             });
 
-            // Manipular erros
             newMap.on('error', (e) => {
                 console.error("Erro ao carregar o mapa:", e);
                 const errorMessage = e.error
@@ -114,7 +107,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             setMapError(`Erro ao inicializar o mapa: ${error?.message || JSON.stringify(error) || 'Erro desconhecido'}`);
         }
 
-        // Função de limpeza
         return () => {
             if (map.current) {
                 map.current.remove();
@@ -123,7 +115,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         };
     }, [initialView.center, initialView.zoom, showControls]);
 
-    // Lidar com clique em marcador
     const handleMarkerClick = useCallback((marker: MarkerItem) => {
         setSelectedMarker(marker);
         if (onMarkerClick) {
@@ -131,29 +122,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }
     }, [onMarkerClick]);
 
-    // Criação de elementos de marcador
     const createMarkerElement = useCallback((item: MarkerItem) => {
-        // Criar um elemento DOM para o marcador
         const el = document.createElement('div');
 
-        // Determinar a cor com base na magnitude (para terremotos)
         let size = '24px';
         let color = '#555';
 
         if (item.magnitude !== undefined) {
             if (item.magnitude >= 5) {
-                color = '#dc2626'; // Vermelho
+                color = '#dc2626'; 
                 size = '32px';
             } else if (item.magnitude >= 3) {
-                color = '#f59e0b'; // Âmbar
+                color = '#f59e0b'; 
                 size = '28px';
             } else if (item.magnitude >= 1) {
-                color = '#10b981'; // Verde
+                color = '#10b981'; 
                 size = '24px';
             }
         }
 
-        // Definir o estilo diretamente no elemento (sem depender do Tailwind)
         el.style.width = size;
         el.style.height = size;
         el.style.backgroundColor = color;
@@ -165,12 +152,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
         el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
         el.style.cursor = 'pointer';
 
-        // Adicionar evento de clique
         el.addEventListener('click', () => {
             handleMarkerClick(item);
         });
 
-        // Adicionar texto para a magnitude se disponível
         if (item.magnitude !== undefined) {
             const span = document.createElement('span');
             span.style.color = 'white';
@@ -179,7 +164,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             span.textContent = item.magnitude.toFixed(1);
             el.appendChild(span);
         } else {
-            // Adicionar um ícone padrão se não houver magnitude
             const span = document.createElement('span');
             span.style.color = 'white';
             span.style.fontSize = '12px';
@@ -191,31 +175,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
         return el;
     }, [handleMarkerClick]);
 
-    // Adicionando marcadores apenas após a inicialização do mapa
     useEffect(() => {
         if (!mapInitialized || !map.current || clusteringEnabled) return;
 
         console.log("Adicionando marcadores individuais:", markers.length);
 
-        // Remover marcadores existentes
         mapMarkers.forEach(marker => marker.remove());
 
-        // Filtrar marcadores com base nos filtros
         const filteredMarkers = markers.filter(item => {
-            // Filtro de magnitude
             if (filters.magnitude !== undefined && item.magnitude !== undefined &&
                 item.magnitude < filters.magnitude) {
                 return false;
             }
 
-            // Filtro de região
             if (filters.region && filters.region !== 'all' && item.place) {
                 if (!item.place.toLowerCase().includes(filters.region.toLowerCase())) {
                     return false;
                 }
             }
 
-            // Filtro de tempo
             if (filters.timeRange && item.time) {
                 const now = new Date();
                 let timeLimit: Date;
@@ -230,7 +208,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     case '12h':
                         timeLimit = new Date(now.getTime() - 12 * 60 * 60 * 1000);
                         break;
-                    default: // 24h
+                    default: 
                         timeLimit = new Date(now.getTime() - 24 * 60 * 60 * 1000);
                 }
 
@@ -242,7 +220,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             return true;
         });
 
-        // Adicionar novos marcadores
         const newMarkers = filteredMarkers.map(item => {
             const el = createMarkerElement(item);
 
@@ -250,7 +227,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 .setLngLat([item.longitude, item.latitude])
                 .addTo(map.current!);
 
-            // Adicionar popup se houver informações
             if (item.title || item.description) {
                 const popupContent = document.createElement('div');
                 popupContent.style.padding = '10px';
@@ -285,9 +261,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         };
     }, [markers, mapInitialized, createMarkerElement, filters, clusteringEnabled]);
 
-    // Alternar clustering
     const toggleClustering = useCallback(() => {
-        // Remover todos os marcadores quando ativar clustering
         if (!clusteringEnabled) {
             mapMarkers.forEach(marker => marker.remove());
             setMapMarkers([]);
@@ -296,14 +270,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
         setClusteringEnabled(!clusteringEnabled);
     }, [clusteringEnabled, mapMarkers]);
 
-    // Função para mudar o tipo de mapa
     const changeMapStyle = useCallback((type: 'streets' | 'satellite' | 'terrain' | 'osm') => {
         if (!map.current) return;
 
         console.log("Mudando estilo do mapa para:", type);
         setMapError(null);
 
-        let styleUrl = MAP_STYLES.osm; // Fallback para o estilo local OSM
+        let styleUrl = MAP_STYLES.osm; 
 
         switch (type) {
             case 'streets':
@@ -329,7 +302,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }
     }, []);
 
-    // Reset da visualização do mapa
     const resetView = useCallback(() => {
         if (!map.current) return;
 
@@ -343,7 +315,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         });
     }, [initialView.center, initialView.zoom]);
 
-    // Toggle visualização 3D
     const toggle3D = useCallback(() => {
         if (!map.current) return;
 
@@ -351,13 +322,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
         console.log("Alternando visualização 3D. Pitch atual:", currentPitch);
 
         if (currentPitch > 0) {
-            // Voltar para 2D
             map.current.easeTo({
                 pitch: 0,
                 bearing: 0
             });
         } else {
-            // Mudar para 3D
             map.current.easeTo({
                 pitch: 60,
                 bearing: 30
@@ -365,15 +334,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }
     }, []);
 
-    // Manipular clique diretamente no mapa (para adicionar marcadores)
     const handleMapClick = useCallback((e: maplibregl.MapMouseEvent) => {
-        // Implemente aqui a lógica de adicionar marcador ao clicar
         console.log("Clique no mapa:", e.lngLat);
 
-        // Se desejar adicionar um novo marcador, pode implementar aqui
     }, []);
 
-    // Manipular alterações nos filtros
     const handleMagnitudeChange = (value: string) => {
         setFilters(prev => ({
             ...prev,
@@ -395,17 +360,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }));
     };
 
-    // Aplicar filtros (função consolidada)
     const applyFilters = () => {
-        // Esta função não precisa fazer nada especial,
-        // pois os filtros já são aplicados por reatividade
         console.log("Filtros aplicados:", filters);
     };
 
     useEffect(() => {
         if (!map.current || !mapInitialized) return;
 
-        // Adicionar evento de clique no mapa
         map.current.on('click', handleMapClick);
 
         return () => {
@@ -423,7 +384,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 style={{ width: '100%', height: '100%' }}
             />
 
-            {/* Componente de clustering */}
             {mapInitialized && clusteringEnabled && (
                 <MapClustering
                     map={map.current}
@@ -436,7 +396,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 />
             )}
 
-            {/* Mensagem de inicialização/erro */}
             {!mapInitialized && !mapError && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75 rounded-lg">
                     <div className="text-center p-4">
@@ -446,7 +405,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 </div>
             )}
 
-            {/* Mensagem de erro */}
             {mapError && (
                 <div className="absolute inset-0 flex items-center justify-center bg-red-50 bg-opacity-90 rounded-lg">
                     <div className="text-center p-4 max-w-md">
@@ -463,7 +421,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                                 setMapError(null);
                                 setMapInitialized(false);
                                 setTimeout(() => {
-                                    // Reinicializar com o estilo OSM local
                                     changeMapStyle('osm');
                                 }, 100);
                             }}
@@ -474,7 +431,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 </div>
             )}
 
-            {/* Painel de controle para opções de mapa */}
             {mapInitialized && showControls && (
                 <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                     <div className="bg-white rounded-lg shadow-lg p-3 w-48">
@@ -533,7 +489,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 </div>
             )}
 
-            {/* Painel de informações do marcador selecionado */}
             {selectedMarker && (
                 <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg max-w-xs z-10">
                     <div className="flex justify-between mb-2">
@@ -586,7 +541,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 </div>
             )}
 
-            {/* Painel de filtros */}
             {mapInitialized && showControls && (
                 <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg z-10 w-48">
                     <h3 className="font-semibold text-gray-700 mb-2">Filtros</h3>
@@ -599,7 +553,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                             className="w-full p-1 text-sm border border-gray-300 rounded"
                             value={filters.magnitude?.toString() || "0"}
                             onChange={(e) => handleMagnitudeChange(e.target.value)}
-                            disabled={!clusteringEnabled} // Desabilitar quando não estiver usando clustering
+                            disabled={!clusteringEnabled} 
                         >
                             <option value="0">Todas</option>
                             <option value="1">Acima de 1</option>
