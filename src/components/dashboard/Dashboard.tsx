@@ -1,4 +1,3 @@
-// components/dashboard/Dashboard.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,24 +6,20 @@ import ChartPanel from './ChartPanel';
 import DataTable from './DataTable';
 import FilterBar from './FilterBar';
 
-// URL da API USGS para dados de terremotos nas últimas 24 horas
 const EARTHQUAKE_API = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson';
 
-// Função para buscar dados
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 interface DashboardProps {
   className?: string;
 }
 
-// Tipos para os filtros
 interface Filters {
   magnitude: number;
   timeRange: string;
   region: string;
 }
 
-// Interface para os dados de terremotos
 interface EarthquakeFeature {
   id: string;
   properties: {
@@ -37,11 +32,10 @@ interface EarthquakeFeature {
     url: string;
   };
   geometry: {
-    coordinates: [number, number, number]; // [longitude, latitude, depth]
+    coordinates: [number, number, number];
   };
 }
 
-// Interface para o item processado
 interface ProcessedEarthquake {
   id: string;
   title: string;
@@ -55,7 +49,6 @@ interface ProcessedEarthquake {
   url: string;
 }
 
-// Interface da API de resposta
 interface EarthquakeApiResponse {
   features: EarthquakeFeature[];
   metadata: {
@@ -64,29 +57,23 @@ interface EarthquakeApiResponse {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
-  // Buscar dados com SWR para atualização automática
   const { data, error, isLoading } = useSWR<EarthquakeApiResponse>(EARTHQUAKE_API, fetcher, {
-    refreshInterval: 60000, // Atualizar a cada minuto
+    refreshInterval: 60000, 
   });
 
-  // Estado para dados processados
   const [processedData, setProcessedData] = useState<ProcessedEarthquake[]>([]);
 
-  // Estado para filtros ativos
   const [filters, setFilters] = useState<Filters>({
     magnitude: 0,
     timeRange: '24h',
     region: 'all'
   });
 
-  // Estado para abas ativas
   const [activeTab, setActiveTab] = useState<'charts' | 'table'>('charts');
 
-  // Processamento de dados
   useEffect(() => {
     if (!data || !data.features) return;
 
-    // Processar e filtrar dados
     let processed = data.features.map((feature: EarthquakeFeature) => ({
       id: feature.id,
       title: feature.properties.title,
@@ -103,10 +90,8 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
       url: feature.properties.url
     }));
 
-    // Filtrar por magnitude
     processed = processed.filter(item => item.magnitude >= filters.magnitude);
 
-    // Filtrar por tempo
     const now = new Date();
     let timeLimit: Date;
 
@@ -120,26 +105,23 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
       case '12h':
         timeLimit = new Date(now.getTime() - 12 * 60 * 60 * 1000);
         break;
-      default: // 24h
+      default: 
         timeLimit = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     }
 
     processed = processed.filter(item => item.time >= timeLimit);
 
-    // Filtrar por região (exemplo simplificado)
     if (filters.region !== 'all') {
       processed = processed.filter(item =>
         item.place.toLowerCase().includes(filters.region.toLowerCase())
       );
     }
 
-    // Ordenar por magnitude (decrescente)
     processed = processed.sort((a, b) => b.magnitude - a.magnitude);
 
     setProcessedData(processed);
   }, [data, filters]);
 
-  // Calcular estatísticas
   const stats = {
     total: processedData.length,
     maxMagnitude: processedData.length > 0
@@ -154,14 +136,12 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
     }).length
   };
 
-  // Handler para atualização de filtros
   const handleFilterChange = (newFilters: Partial<Filters>) => {
     setFilters({ ...filters, ...newFilters });
   };
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
-      {/* Cabeçalho do Dashboard */}
       <div className="bg-gray-50 p-4 rounded-t-lg border-b">
         <h2 className="text-xl font-bold text-gray-800">Painel de Terremotos</h2>
         <p className="text-sm text-gray-600">
@@ -170,7 +150,6 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
         </p>
       </div>
 
-      {/* Resumo de estatísticas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-white">
         <div className="bg-blue-50 p-3 rounded-lg">
           <p className="text-sm text-blue-700">Total de Eventos</p>
@@ -190,10 +169,8 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
         </div>
       </div>
 
-      {/* Barra de filtros */}
       <FilterBar filters={filters} onFilterChange={handleFilterChange} />
 
-      {/* Navegação entre abas */}
       <div className="flex border-b">
         <button
           className={`py-2 px-4 font-medium ${activeTab === 'charts'
@@ -213,7 +190,6 @@ const Dashboard: React.FC<DashboardProps> = ({ className = '' }) => {
         </button>
       </div>
 
-      {/* Conteúdo principal */}
       <div className="flex-grow overflow-auto p-4">
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
