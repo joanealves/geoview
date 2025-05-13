@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 
-// Use tipagem nativa do maplibre para GeoJSON quando possível
 interface MarkerItem {
     longitude: number;
     latitude: number;
@@ -44,7 +43,6 @@ const MapClustering: React.FC<MapClusteringProps> = ({
     const clusterCount = useRef('earthquake-cluster-count');
     const markersAdded = useRef(false);
 
-    // Referências para os handlers de eventos
     const handlers = useRef<{
         clusterClick: ((e: maplibregl.MapMouseEvent) => void) | null;
         unclusteredClick: ((e: maplibregl.MapMouseEvent) => void) | null;
@@ -61,26 +59,22 @@ const MapClustering: React.FC<MapClusteringProps> = ({
         unclusteredLeave: null
     });
 
-    // Converter marcadores para formato GeoJSON
     const getGeoJsonData = (): maplibregl.GeoJSONSourceOptions['data'] => {
         return {
             type: 'FeatureCollection',
             features: markers
                 .filter(marker => {
-                    // Aplicar filtros
                     if (filters?.magnitude !== undefined && marker.magnitude !== undefined &&
                         marker.magnitude < filters.magnitude) {
                         return false;
                     }
 
-                    // Filtro de região (se existir no marker)
                     if (filters?.region && filters.region !== 'all' && marker.place) {
                         if (!marker.place.toLowerCase().includes(filters.region.toLowerCase())) {
                             return false;
                         }
                     }
 
-                    // Filtro de tempo (se existir no marker)
                     if (filters?.timeRange && marker.time) {
                         const now = new Date();
                         let timeLimit: Date;
@@ -95,7 +89,7 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                             case '12h':
                                 timeLimit = new Date(now.getTime() - 12 * 60 * 60 * 1000);
                                 break;
-                            default: // 24h
+                            default: 
                                 timeLimit = new Date(now.getTime() - 24 * 60 * 60 * 1000);
                         }
 
@@ -128,24 +122,19 @@ const MapClustering: React.FC<MapClusteringProps> = ({
         } as maplibregl.GeoJSONSourceOptions['data'];
     };
 
-    // Adicionar fonte e camadas para clustering
     useEffect(() => {
         if (!map || !map.isStyleLoaded()) return;
 
         const setupClustering = () => {
             try {
-                // Verificar se a fonte já existe e removê-la
                 if (map.getSource(sourceId.current)) {
-                    // Remover todas as camadas relacionadas primeiro
                     if (map.getLayer(clusterCount.current)) map.removeLayer(clusterCount.current);
                     if (map.getLayer(clusterId.current)) map.removeLayer(clusterId.current);
                     if (map.getLayer(unclustered.current)) map.removeLayer(unclustered.current);
 
-                    // Agora remover a fonte
                     map.removeSource(sourceId.current);
                 }
 
-                // Adicionar nova fonte com dados GeoJSON
                 map.addSource(sourceId.current, {
                     type: 'geojson',
                     data: getGeoJsonData(),
@@ -154,7 +143,6 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                     clusterRadius: clusterRadius
                 });
 
-                // Adicionar camada de círculos para clusters
                 map.addLayer({
                     id: clusterId.current,
                     type: 'circle',
@@ -164,23 +152,22 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                         'circle-color': [
                             'step',
                             ['get', 'point_count'],
-                            '#6366f1', // Azul para clusters pequenos
-                            10, '#8b5cf6', // Roxo para clusters médios
-                            30, '#ec4899'  // Rosa para clusters grandes
+                            '#6366f1', 
+                            10, '#8b5cf6', 
+                            30, '#ec4899'  
                         ],
                         'circle-radius': [
                             'step',
                             ['get', 'point_count'],
-                            20,   // Raio para clusters pequenos
-                            10, 30,  // Raio para clusters médios
-                            30, 40   // Raio para clusters grandes
+                            20,   
+                            10, 30, 
+                            30, 40  
                         ],
                         'circle-stroke-width': 2,
                         'circle-stroke-color': '#ffffff'
                     }
                 });
 
-                // Adicionar camada para contagem de pontos no cluster
                 map.addLayer({
                     id: clusterCount.current,
                     type: 'symbol',
@@ -196,7 +183,6 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                     }
                 });
 
-                // Adicionar camada para pontos individuais
                 map.addLayer({
                     id: unclustered.current,
                     type: 'circle',
@@ -207,10 +193,10 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                             'interpolate',
                             ['linear'],
                             ['get', 'magnitude'],
-                            0, '#6b7280',  // Cinza
-                            1, '#10b981',  // Verde
-                            3, '#f59e0b',  // Âmbar
-                            5, '#dc2626'   // Vermelho
+                            0, '#6b7280',  
+                            1, '#10b981',  
+                            3, '#f59e0b',  
+                            5, '#dc2626'   
                         ],
                         'circle-radius': [
                             'interpolate',
@@ -227,7 +213,6 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                     }
                 });
 
-                // Handler para clique em clusters - versão mais robusta
                 const clusterClickHandler = (e: maplibregl.MapMouseEvent) => {
                     if (!e.point) return;
 
@@ -241,25 +226,20 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                     const source = map.getSource(sourceId.current);
                     if (!source || typeof source !== 'object') return;
 
-                    // Verificar se o recurso é um cluster e tem coordenadas válidas
                     if (feature.geometry && feature.geometry.type === 'Point') {
                         const coordinates = feature.geometry.coordinates.slice();
 
-                        // Abordagem unificada para todas as versões do MapLibre
-                        // Ao invés de tentar expandir o cluster, apenas damos zoom na área
                         map.flyTo({
                             center: [coordinates[0], coordinates[1]],
-                            zoom: Math.min(map.getZoom() + 2, 16) // Limitar zoom máximo
+                            zoom: Math.min(map.getZoom() + 2, 16) 
                         });
 
-                        // Se houver callback, chamar com os features disponíveis
                         if (onClusterClick) {
                             onClusterClick([feature]);
                         }
                     }
                 };
 
-                // Handler para clique em marcadores individuais
                 const unclusteredClickHandler = (e: maplibregl.MapMouseEvent) => {
                     if (!e.point) return;
 
@@ -292,7 +272,6 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                     }
                 };
 
-                // Handlers para cursor
                 const clusterEnterHandler = () => {
                     map.getCanvas().style.cursor = 'pointer';
                 };
@@ -309,7 +288,6 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                     map.getCanvas().style.cursor = '';
                 };
 
-                // Armazenar os handlers para limpeza posterior
                 handlers.current = {
                     clusterClick: clusterClickHandler,
                     unclusteredClick: unclusteredClickHandler,
@@ -319,7 +297,6 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                     unclusteredLeave: unclusteredLeaveHandler
                 };
 
-                // Adicionar os event listeners
                 map.on('click', clusterId.current, clusterClickHandler);
                 map.on('click', unclustered.current, unclusteredClickHandler);
                 map.on('mouseenter', clusterId.current, clusterEnterHandler);
@@ -333,20 +310,16 @@ const MapClustering: React.FC<MapClusteringProps> = ({
             }
         };
 
-        // Verificar se o estilo já está carregado
         if (map.isStyleLoaded()) {
             setupClustering();
         } else {
             map.once('style.load', setupClustering);
         }
 
-        // Limpar listeners ao desmontar
         return () => {
             if (!map) return;
 
-            // Usar try/catch para evitar erros se a camada ou fonte já tiver sido removida
             try {
-                // Remover event listeners de forma segura
                 const clusterLayerId = clusterId.current;
                 const unclusteredLayerId = unclustered.current;
 
@@ -374,7 +347,6 @@ const MapClustering: React.FC<MapClusteringProps> = ({
                     map.off('mouseleave', unclusteredLayerId, handlers.current.unclusteredLeave);
                 }
 
-                // Limpar as referências aos handlers
                 handlers.current = {
                     clusterClick: null,
                     unclusteredClick: null,
@@ -389,7 +361,6 @@ const MapClustering: React.FC<MapClusteringProps> = ({
         };
     }, [map, clusterMaxZoom, clusterRadius, onClusterClick, onMarkerClick]);
 
-    // Atualizar dados quando os marcadores ou filtros mudarem
     useEffect(() => {
         if (!map || !markersAdded.current) return;
 
@@ -403,7 +374,7 @@ const MapClustering: React.FC<MapClusteringProps> = ({
         }
     }, [map, markers, filters]);
 
-    return null; // Componente não renderiza nada visualmente
+    return null; 
 };
 
 export default MapClustering;
