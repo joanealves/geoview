@@ -1,4 +1,3 @@
-// components/dashboard/ChartPanel.tsx
 'use client';
 
 import { useState } from 'react';
@@ -10,7 +9,6 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-// Tipos para os dados
 interface ChartDataItem {
   id: string;
   title: string;
@@ -31,10 +29,8 @@ interface ChartPanelProps {
 const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
   const [activeChart, setActiveChart] = useState<'magnitude' | 'depth' | 'time' | 'distribution'>('magnitude');
 
-  // Cores para os gráficos
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-  // Preparar dados para o gráfico de magnitude
   const magnitudeData = () => {
     const ranges = [
       { range: '0-1', count: 0 },
@@ -57,7 +53,6 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
     return ranges;
   };
 
-  // Preparar dados para o gráfico de profundidade
   const depthData = () => {
     const ranges = [
       { range: '0-10', count: 0 },
@@ -78,9 +73,7 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
     return ranges;
   };
 
-  // Preparar dados para o gráfico temporal
   const timeData = () => {
-    // Criar buckets de horas (últimas 24 horas)
     const hours = Array.from({ length: 24 }, (_, i) => {
       const hour = new Date();
       hour.setHours(hour.getHours() - (23 - i));
@@ -92,13 +85,11 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
       };
     });
 
-    // Preencher contagens
     data.forEach(item => {
       const itemHour = item.time.getHours();
       const currentDate = new Date().getDate();
       const itemDate = item.time.getDate();
 
-      // Só contar se for do mesmo dia ou do dia anterior (dentro de 24h)
       if (currentDate === itemDate || (currentDate - itemDate === 1 && new Date().getHours() <= itemHour)) {
         const bucketIndex = hours.findIndex(h => h.hour === itemHour);
         if (bucketIndex !== -1) {
@@ -113,9 +104,7 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
     }));
   };
 
-  // Preparar dados para o gráfico de distribuição
   const distributionData = () => {
-    // Contar os tipos de eventos
     const typeCounts: Record<string, number> = {};
 
     data.forEach(item => {
@@ -125,14 +114,12 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
       typeCounts[item.type]++;
     });
 
-    // Converter para array
     return Object.entries(typeCounts).map(([name, value]) => ({
       name,
       value
     }));
   };
 
-  // Componente para o gráfico de distribuição
   const DistributionChart = () => {
     const distData = distributionData();
 
@@ -153,7 +140,6 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          {/* Adicionando tooltip e legend como elementos separados, mas não dentro do Pie */}
           <Tooltip />
           <Legend />
         </PieChart>
@@ -163,7 +149,6 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Seletor de gráficos */}
       <div className="flex overflow-x-auto mb-4">
         <button
           className={`px-4 py-2 rounded-md mr-2 ${activeChart === 'magnitude'
@@ -199,7 +184,6 @@ const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
         </button>
       </div>
 
-      {/* Área do gráfico */}
       <div className="bg-white p-4 rounded-lg shadow flex-grow">
         <h3 className="text-lg font-semibold mb-4">
           {activeChart === 'magnitude' && 'Distribuição por Magnitude'}
