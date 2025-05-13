@@ -35,14 +35,14 @@ csharp
 Copiar
 Editar
 geoview/
-├── app/               # Páginas e rotas (App Router)
-│   ├── page.tsx       # Página inicial
-│   └── layout.tsx     # Layout global
-├── components/        # Componentes reutilizáveis
-├── styles/            # Estilos globais
-├── public/            # Assets públicos
-├── tsconfig.json      # Configuração do TypeScript
-├── tailwind.config.js # Configuração do Tailwind
+├── app/              
+│   ├── page.tsx      
+│   └── layout.tsx     
+├── components/       
+├── styles/           
+├── public/           
+├── tsconfig.json      
+├── tailwind.config.js 
 └── README.md
 
 📈 Futuras Funcionalidades
