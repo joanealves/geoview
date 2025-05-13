@@ -14,7 +14,6 @@ interface FilterBarProps {
 const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
   return (
     <div className="bg-gray-50 p-4 border-y flex flex-wrap gap-4 items-center">
-      {/* Filtro de magnitude */}
       <div className="flex flex-col">
         <label htmlFor="magnitude-filter" className="text-sm text-gray-600 mb-1">
           Magnitude mínima: {filters.magnitude}
@@ -28,11 +27,10 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
           value={filters.magnitude}
           onChange={(e) => onFilterChange({ magnitude: parseFloat(e.target.value) })}
           className="w-36"
-          style={{ accentColor: '#3b82f6' }} // Alternativa universal para accent-color
+          style={{ accentColor: '#3b82f6' }}
         />
       </div>
 
-      {/* Filtro de tempo */}
       <div className="flex flex-col">
         <label className="text-sm text-gray-600 mb-1">
           Período de tempo
@@ -53,7 +51,6 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
         </div>
       </div>
 
-      {/* Filtro de região (exemplo básico) */}
       <div className="flex flex-col">
         <label htmlFor="region-filter" className="text-sm text-gray-600 mb-1">
           Região
